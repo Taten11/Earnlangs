@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submissions - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-gray-800 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold"><i class="fas fa-shield-alt mr-2"></i>Admin Panel</h1>
+            <a href="{{ url_for('logout') }}" class="bg-red-500 px-3 py-1 rounded text-sm font-bold">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-6">
+        <div class="flex flex-wrap gap-2 mb-6">
+            <a href="{{ url_for('admin') }}" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold text-sm">Dashboard</a>
+            <a href="{{ url_for('admin_submissions') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Submissions</a>
+            <a href="{{ url_for('admin_users') }}" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold text-sm">Users</a>
+            <a href="{{ url_for('admin_tasks') }}" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold text-sm">Tasks</a>
+            <a href="{{ url_for('admin_payouts') }}" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold text-sm">Payouts</a>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="bg-green-50 text-green-700 p-3 rounded-lg mb-4 text-sm">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center flex-wrap gap-3">
+                <h2 class="text-lg font-bold text-gray-800"><i class="fas fa-images mr-2"></i>Task Submissions</h2>
+                <div class="flex gap-2 flex-wrap">
+                    <a href="{{ url_for('admin_submissions', status='pending') }}" class="px-3 py-1 rounded text-sm font-bold {{ 'bg-yellow-500 text-white' if current_filter == 'pending' else 'bg-gray-200' }}">Pending</a>
+                    <a href="{{ url_for('admin_submissions', status='approved') }}" class="px-3 py-1 rounded text-sm font-bold {{ 'bg-green-500 text-white' if current_filter == 'approved' else 'bg-gray-200' }}">Approved</a>
+                    <a href="{{ url_for('admin_submissions', status='rejected') }}" class="px-3 py-1 rounded text-sm font-bold {{ 'bg-red-500 text-white' if current_filter == 'rejected' else 'bg-gray-200' }}">Rejected</a>
+                    <a href="{{ url_for('admin_submissions', status='all') }}" class="px-3 py-1 rounded text-sm font-bold {{ 'bg-blue-500 text-white' if current_filter == 'all' else 'bg-gray-200' }}">All</a>
+                </div>
+            </div>
+
+            <div class="p-4 space-y-4">
+                {% for sub in submissions %}
+                <div class="border border-gray-200 rounded-xl p-4 {{ 'bg-yellow-50' if sub.status == 'pending' else '' }}">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <a href="{{ url_for('static', filename='uploads/' + sub.screenshot) }}" target="_blank">
+                            <img src="{{ url_for('static', filename='uploads/' + sub.screenshot) }}" class="w-full md:w-48 h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 transition">
+                        </a>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="font-bold text-gray-800">{{ sub.task.title }}</h4>
+                                    <p class="text-sm text-gray-500">By: <span class="font-medium">{{ sub.user.username }}</span></p>
+                                </div>
+                                <span class="bg-green-100 text-green-600 px-2 py-1 rounded text-sm font-bold">+{{ sub.task.reward }} pts</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">{{ sub.note or 'No note provided' }}</p>
+                            <p class="text-xs text-gray-400">Submitted: {{ sub.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            
+                            {% if sub.status == 'pending' %}
+                            <div class="mt-3 flex gap-2">
+                                <form action="{{ url_for('admin_approve_submission', sub_id=sub.id) }}" method="POST" class="inline">
+                                    <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition">
+                                        <i class="fas fa-check mr-1"></i>Approve
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('admin_reject_submission', sub_id=sub.id) }}" method="POST" class="inline">
+                                    <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition">
+                                        <i class="fas fa-times mr-1"></i>Reject
+                                    </button>
+                                </form>
+                            </div>
+                            {% else %}
+                            <div class="mt-3">
+                                {% if sub.status == 'approved' %}
+                                <span class="bg-green-100 text-green-600 px-3 py-1 rounded-lg text-sm font-bold"><i class="fas fa-check-circle mr-1"></i>Approved</span>
+                                {% else %}
+                                <span class="bg-red-100 text-red-600 px-3 py-1 rounded-lg text-sm font-bold"><i class="fas fa-times-circle mr-1"></i>Rejected</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-inbox text-5xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">No submissions found</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
